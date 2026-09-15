@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Robot Controller</title>
+<style>
+body {
+  font-family: Arial;
+  background: #222;
+  color: white;
+  text-align: center;
+  margin: 0;
+  padding: 0;
+}
+
+button {
+  width: 120px;
+  height: 60px;
+  font-size: 22px;
+  margin: 10px;
+  border-radius: 10px;
+  border: none;
+}
+
+#connectBtn {
+  background: #4CAF50;
+  width: 200px;
+  height: 60px;
+  font-size: 24px;
+}
+
+#joystickArea {
+  width: 250px;
+  height: 250px;
+  background: #444;
+  border-radius: 50%;
+  margin: 20px auto;
+  touch-action: none;
+  position: relative;
+}
+
+#stick {
+  width: 80px;
+  height: 80px;
+  background: #888;
+  border-radius: 50%;
+  position: absolute;
+  left: 85px;
+  top: 85px;
+}
+</style>
+</head>
+
+<body>
+
+<h2>Robot Controller</h2>
+<button id="connectBtn">Connect</button>
+
+<div id="joystickArea">
+  <div id="stick"></div>
+</div>
+
+<div>
+  <button onclick="sendButton('FWD')" style="background:#1e90ff">FWD</button>
+</div>
+
+<div>
+  <button onclick="sendButton('LEFT')" style="background:#ff8c00">LEFT</button>
+  <button onclick="sendButton('STOP')" style="background:#dc143c">STOP</button>
+  <button onclick="sendButton('RIGHT')" style="background:#ff8c00">RIGHT</button>
+</div>
+
+<div>
+  <button onclick="sendButton('BACK')" style="background:#1e90ff">BACK</button>
+</div>
+
+<script>
+let device, server, service, characteristic;
+
+// BLE connect
+document.getElementById("connectBtn").onclick = async () => {
+  try {
+    device = await navigator.bluetooth.requestDevice({
+      filters: [{ namePrefix: "ESP32" }],
+      optionalServices: ["1234"]
+    });
+
+    server = await device.gatt.connect();
+    service = await server.getPrimaryService("1234");
+    characteristic = await service.getCharacteristic("ABCD");
+
+    alert("Connected!");
+  } catch (e) {
+    alert("Connection failed: " + e);
+  }
+};
+
+// Send button command
+function sendButton(cmd) {
+  if (!characteristic) return;
+  let data = new TextEncoder().encode("B:" + cmd);
+  characteristic.writeValue(data);
+}
+
+// Joystick logic
+let joyArea = document.getElementById("joystickArea");
+let stick = document.getElementById("stick");
+
+let centerX = 125;
+let centerY = 125;
+
+joyArea.addEventListener("pointermove", (e) => {
+  if (e.pressure === 0) return;
+
+  let rect = joyArea.getBoundingClientRect();
+  let x = e.clientX - rect.left;
+  let y = e.clientY - rect.top;
+
+  let dx = x - centerX;
+  let dy = y - centerY;
+
+  let dist = Math.sqrt(dx*dx + dy*dy);
+  let maxDist = 100;
+
+  if (dist > maxDist) {
+    dx = dx * (maxDist / dist);
+    dy = dy * (maxDist / dist);
+  }
+
+  stick.style.left = (centerX + dx - 40) + "px";
+  stick.style.top = (centerY + dy - 40) + "px";
+
+  let joyX = Math.round(dx);
+  let joyY = Math.round(dy);
+
+  sendJoystick(joyX, joyY);
+});
+
+joyArea.addEventListener("pointerup", () => {
+  stick.style.left = "85px";
+  stick.style.top = "85px";
+  sendJoystick(0, 0);
+});
+
+function sendJoystick(x, y) {
+  if (!characteristic) return;
+  let data = new TextEncoder().encode("J:" + x + "," + y);
+  characteristic.writeValue(data);
+}
+</script>
+
+</body>
+</html>
