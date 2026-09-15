@@ -13,6 +13,7 @@ body {
   overflow: hidden;
 }
 
+/* Top bar */
 #topBar {
   text-align: center;
   padding: 10px;
@@ -20,52 +21,60 @@ body {
 
 #connectBtn {
   background: #4CAF50;
-  width: 200px;
-  height: 60px;
-  font-size: 24px;
+  width: 160px;
+  height: 50px;
+  font-size: 20px;
   border-radius: 10px;
   border: none;
 }
 
+/* Main layout */
 #container {
   display: flex;
   flex-direction: row;
   justify-content: center;
   align-items: center;
   gap: 20px; /* afstand mellem joystick og knapper */
+  height: calc(100vh - 80px);
 }
 
-/* Joystick area */
-#joystickArea {
-  width: 300px;       /* fast bredde */
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
+/* Joystick */
 #joyCircle {
   width: 150px;
   height: 150px;
+  background: #444;
+  border-radius: 50%;
+  position: relative;
+  touch-action: none;
 }
 
 #stick {
   width: 45px;
   height: 45px;
+  background: #888;
+  border-radius: 50%;
+  position: absolute;
+  left: 52px; /* center */
+  top: 52px;  /* center */
 }
 
-/* Button grid */
+/* Buttons */
 #buttonArea {
-  width: 200px;       /* fast bredde */
+  width: 200px;
+  display: grid;
   grid-template-columns: 90px 90px;
-  grid-gap: 8px;
-  padding: 10px;
+  grid-gap: 10px;
+  justify-content: center;
+  align-content: center;
 }
 
 .btn {
-  width: 90px;
-  height: 45px;
-  font-size: 16px;
+  background: #1e90ff;
+  font-size: 18px;
   border-radius: 10px;
+  border: none;
+  height: 45px;
+  width: 90px;
 }
 </style>
 </head>
@@ -78,14 +87,12 @@ body {
 
 <div id="container">
 
-  <!-- Left: Joystick -->
-  <div id="joystickArea">
-    <div id="joyCircle">
-      <div id="stick"></div>
-    </div>
+  <!-- Joystick -->
+  <div id="joyCircle">
+    <div id="stick"></div>
   </div>
 
-  <!-- Right: Buttons -->
+  <!-- Buttons -->
   <div id="buttonArea">
     <button class="btn" onclick="sendButton('A')">A</button>
     <button class="btn" onclick="sendButton('B')">B</button>
@@ -98,7 +105,7 @@ body {
 <script>
 let device, server, service, characteristic;
 
-// BLE connect
+/* BLE connect */
 document.getElementById("connectBtn").onclick = async () => {
   try {
     device = await navigator.bluetooth.requestDevice({
@@ -116,14 +123,14 @@ document.getElementById("connectBtn").onclick = async () => {
   }
 };
 
-// Send button command
+/* Send button command */
 function sendButton(cmd) {
   if (!characteristic) return;
   let data = new TextEncoder().encode("B:" + cmd);
   characteristic.writeValue(data);
 }
 
-// Joystick logic
+/* Joystick logic — CORRECT version */
 let joyCircle = document.getElementById("joyCircle");
 let stick = document.getElementById("stick");
 
@@ -132,7 +139,6 @@ joyCircle.addEventListener("pointermove", (e) => {
 
   let rect = joyCircle.getBoundingClientRect();
 
-  // Position relativt til joystick-cirklen
   let x = e.clientX - rect.left;
   let y = e.clientY - rect.top;
 
@@ -164,7 +170,11 @@ joyCircle.addEventListener("pointerup", () => {
   sendJoystick(0, 0);
 });
 
-
+function sendJoystick(x, y) {
+  if (!characteristic) return;
+  let data = new TextEncoder().encode("J:" + x + "," + y);
+  characteristic.writeValue(data);
+}
 </script>
 
 </body>
