@@ -145,44 +145,45 @@ function sendButton(cmd) {
 let joyCircle = document.getElementById("joyCircle");
 let stick = document.getElementById("stick");
 
-let centerX = 150;
-let centerY = 150;
+function getJoystickMetrics() {
+  let rect = joyCircle.getBoundingClientRect();
+  let radius = rect.width / 2;
+  return {
+    rect: rect,
+    centerX: rect.left + radius,
+    centerY: rect.top + radius,
+    radius: radius
+  };
+}
 
 joyCircle.addEventListener("pointermove", (e) => {
   if (e.pressure === 0) return;
 
-  let rect = joyCircle.getBoundingClientRect();
-  let x = e.clientX - rect.left;
-  let y = e.clientY - rect.top;
+  let m = getJoystickMetrics();
 
-  let dx = x - centerX;
-  let dy = y - centerY;
+  let dx = e.clientX - m.centerX;
+  let dy = e.clientY - m.centerY;
 
   let dist = Math.sqrt(dx*dx + dy*dy);
-  let maxDist = 120;
 
-  if (dist > maxDist) {
-    dx = dx * (maxDist / dist);
-    dy = dy * (maxDist / dist);
+  if (dist > m.radius) {
+    dx = dx * (m.radius / dist);
+    dy = dy * (m.radius / dist);
   }
 
-  stick.style.left = (centerX + dx - 45) + "px";
-  stick.style.top = (centerY + dy - 45) + "px";
+  stick.style.left = (m.radius + dx - stick.offsetWidth/2) + "px";
+  stick.style.top  = (m.radius + dy - stick.offsetHeight/2) + "px";
 
   sendJoystick(Math.round(dx), Math.round(dy));
 });
 
 joyCircle.addEventListener("pointerup", () => {
-  stick.style.left = "105px";
-  stick.style.top = "105px";
+  let m = getJoystickMetrics();
+  stick.style.left = (m.radius - stick.offsetWidth/2) + "px";
+  stick.style.top  = (m.radius - stick.offsetHeight/2) + "px";
   sendJoystick(0, 0);
 });
 
-function sendJoystick(x, y) {
-  if (!characteristic) return;
-  let data = new TextEncoder().encode("J:" + x + "," + y);
-  characteristic.writeValue(data);
-}
 </script>
 
 </body>
