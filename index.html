@@ -178,6 +178,9 @@ joyCircle.addEventListener("pointermove", (e) => {
 
 /* global pointerup = virker også hvis man slipper uden for cirklen */
 document.addEventListener("pointerup", resetJoystick);
+document.addEventListener("pointercancel", resetJoystick);
+document.addEventListener("touchend", resetJoystick);
+document.addEventListener("touchcancel", resetJoystick);
 joyCircle.addEventListener("pointerleave", resetJoystick);
 </script>
 
