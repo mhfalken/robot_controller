@@ -148,12 +148,10 @@ function resetJoystick() {
 }
 
 joyCircle.addEventListener("pointerdown", (e) => {
-  joyCircle.setPointerCapture(e.pointerId);   // ⭐ Fanger pointeren
+  joyCircle.setPointerCapture(e.pointerId);
 });
 
 joyCircle.addEventListener("pointermove", (e) => {
-  if (!joyCircle.hasPointerCapture(e.pointerId)) return;
-
   let rect = joyCircle.getBoundingClientRect();
   let x = e.clientX - rect.left;
   let y = e.clientY - rect.top;
@@ -178,7 +176,7 @@ joyCircle.addEventListener("pointermove", (e) => {
 });
 
 joyCircle.addEventListener("pointerup", (e) => {
-  joyCircle.releasePointerCapture(e.pointerId);  // ⭐ Slip pointeren
+  joyCircle.releasePointerCapture(e.pointerId);
   resetJoystick();
 });
 
@@ -187,13 +185,12 @@ joyCircle.addEventListener("pointercancel", (e) => {
   resetJoystick();
 });
 
-
-/* global pointerup = virker også hvis man slipper uden for cirklen */
+/* GLOBAL fallback — virker når finger slipper uden for cirklen */
 document.addEventListener("pointerup", resetJoystick);
 document.addEventListener("pointercancel", resetJoystick);
 document.addEventListener("touchend", resetJoystick);
 document.addEventListener("touchcancel", resetJoystick);
-joyCircle.addEventListener("pointerleave", resetJoystick);
+
 </script>
 
 </body>
