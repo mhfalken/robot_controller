@@ -77,17 +77,16 @@ button {
 <script>
 let device, server, service, characteristic;
 
-// BLE connect
 document.getElementById("connectBtn").onclick = async () => {
   try {
     device = await navigator.bluetooth.requestDevice({
       filters: [{ namePrefix: "ESP32" }],
-      optionalServices: ["1234"]
+      optionalServices: ["00001234-0000-1000-8000-00805f9b34fb"]
     });
 
     server = await device.gatt.connect();
-    service = await server.getPrimaryService("1234");
-    characteristic = await service.getCharacteristic("ABCD");
+    service = await server.getPrimaryService("00001234-0000-1000-8000-00805f9b34fb");
+    characteristic = await service.getCharacteristic("0000abcd-0000-1000-8000-00805f9b34fb");
 
     alert("Connected!");
   } catch (e) {
@@ -95,14 +94,12 @@ document.getElementById("connectBtn").onclick = async () => {
   }
 };
 
-// Send button command
 function sendButton(cmd) {
   if (!characteristic) return;
   let data = new TextEncoder().encode("B:" + cmd);
   characteristic.writeValue(data);
 }
 
-// Joystick logic
 let joyArea = document.getElementById("joystickArea");
 let stick = document.getElementById("stick");
 
@@ -130,10 +127,7 @@ joyArea.addEventListener("pointermove", (e) => {
   stick.style.left = (centerX + dx - 40) + "px";
   stick.style.top = (centerY + dy - 40) + "px";
 
-  let joyX = Math.round(dx);
-  let joyY = Math.round(dy);
-
-  sendJoystick(joyX, joyY);
+  sendJoystick(Math.round(dx), Math.round(dy));
 });
 
 joyArea.addEventListener("pointerup", () => {
