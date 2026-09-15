@@ -133,6 +133,7 @@ function sendButton(cmd) {
 /* Joystick logic */
 let joyCircle = document.getElementById("joyCircle");
 let stick = document.getElementById("stick");
+let joystickActive = false;
 
 function sendJoystick(x, y) {
   if (!characteristic) return;
@@ -148,11 +149,12 @@ function resetJoystick() {
 }
 
 joyCircle.addEventListener("pointerdown", (e) => {
+  joystickActive = true;
   joyCircle.setPointerCapture(e.pointerId);
 });
 
 joyCircle.addEventListener("pointermove", (e) => {
-  if (!joyCircle.hasPointerCapture(e.pointerId)) return;
+  if (!joystickActive) return;
 
   let rect = joyCircle.getBoundingClientRect();
   let x = e.clientX - rect.left;
@@ -178,20 +180,24 @@ joyCircle.addEventListener("pointermove", (e) => {
 });
 
 joyCircle.addEventListener("pointerup", (e) => {
+  joystickActive = false;
   joyCircle.releasePointerCapture(e.pointerId);
   resetJoystick();
 });
 
 joyCircle.addEventListener("pointercancel", (e) => {
+  joystickActive = false;
   joyCircle.releasePointerCapture(e.pointerId);
   resetJoystick();
 });
 
-/* Fallback hvis browseren slipper pointeren uden for elementet */
-document.addEventListener("pointerup", resetJoystick);
-document.addEventListener("pointercancel", resetJoystick);
-document.addEventListener("touchend", resetJoystick);
-document.addEventListener("touchcancel", resetJoystick);
+// GLOBAL: kun hvis joysticket faktisk var aktivt
+document.addEventListener("pointerup", () => {
+  if (joystickActive) {
+    joystickActive = false;
+    resetJoystick();
+  }
+});
 
 
 </script>
