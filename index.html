@@ -35,11 +35,13 @@ body {
   display: flex;
   flex-direction: row;
   height: calc(100vh - 80px);
+  justify-content: center;
+  align-items: center;
 }
 
 /* Joystick area */
 #joystickArea {
-  flex: 1;
+  width: 300px;       /* fast bredde */
   display: flex;
   justify-content: center;
   align-items: center;
@@ -66,11 +68,11 @@ body {
 
 /* Button grid */
 #buttonArea {
-  width: 260px;              /* fast bredde i stedet for flex */
+  width: 260px;       /* fast bredde */
   display: grid;
-  grid-template-columns: 120px 120px;   /* faste knapbredder */
-  grid-gap: 10px;            /* lille afstand */
-  justify-content: center;   /* centrer grid */
+  grid-template-columns: 120px 120px;
+  grid-gap: 10px;
+  justify-content: center;
   align-content: center;
   padding: 10px;
 }
