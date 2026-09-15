@@ -152,6 +152,8 @@ joyCircle.addEventListener("pointerdown", (e) => {
 });
 
 joyCircle.addEventListener("pointermove", (e) => {
+  if (!joyCircle.hasPointerCapture(e.pointerId)) return;
+
   let rect = joyCircle.getBoundingClientRect();
   let x = e.clientX - rect.left;
   let y = e.clientY - rect.top;
@@ -185,11 +187,12 @@ joyCircle.addEventListener("pointercancel", (e) => {
   resetJoystick();
 });
 
-/* GLOBAL fallback — virker når finger slipper uden for cirklen */
+/* Fallback hvis browseren slipper pointeren uden for elementet */
 document.addEventListener("pointerup", resetJoystick);
 document.addEventListener("pointercancel", resetJoystick);
 document.addEventListener("touchend", resetJoystick);
 document.addEventListener("touchcancel", resetJoystick);
+
 
 </script>
 
