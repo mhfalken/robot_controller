@@ -134,11 +134,20 @@ function sendButton(cmd) {
 let joyCircle = document.getElementById("joyCircle");
 let stick = document.getElementById("stick");
 
+function resetJoystick() {
+  let rect = joyCircle.getBoundingClientRect();
+  let radius = rect.width / 2;
+
+  stick.style.left = (radius - stick.offsetWidth/2) + "px";
+  stick.style.top  = (radius - stick.offsetHeight/2) + "px";
+
+  sendJoystick(0, 0);   // <- sender 0,0 hver gang man slipper
+}
+
 joyCircle.addEventListener("pointermove", (e) => {
   if (e.pressure === 0) return;
 
   let rect = joyCircle.getBoundingClientRect();
-
   let x = e.clientX - rect.left;
   let y = e.clientY - rect.top;
 
@@ -160,21 +169,12 @@ joyCircle.addEventListener("pointermove", (e) => {
   sendJoystick(Math.round(dx), Math.round(dy));
 });
 
-joyCircle.addEventListener("pointerup", () => {
-  let rect = joyCircle.getBoundingClientRect();
-  let radius = rect.width / 2;
+/* Når man slipper fingeren */
+joyCircle.addEventListener("pointerup", resetJoystick);
 
-  stick.style.left = (radius - stick.offsetWidth/2) + "px";
-  stick.style.top  = (radius - stick.offsetHeight/2) + "px";
+/* Når fingeren glider ud af joystick-cirklen */
+joyCircle.addEventListener("pointerleave", resetJoystick);
 
-  sendJoystick(0, 0);
-});
-
-function sendJoystick(x, y) {
-  if (!characteristic) return;
-  let data = new TextEncoder().encode("J:" + x + "," + y);
-  characteristic.writeValue(data);
-}
 </script>
 
 </body>
