@@ -141,16 +141,18 @@ function sendJoystick(x, y) {
 }
 
 function resetJoystick() {
-  // grafisk tilbage til midten
   stick.style.left = "50%";
   stick.style.top = "50%";
   stick.style.transform = "translate(-50%, -50%)";
-  // send 0,0
   sendJoystick(0, 0);
 }
 
+joyCircle.addEventListener("pointerdown", (e) => {
+  joyCircle.setPointerCapture(e.pointerId);   // ⭐ Fanger pointeren
+});
+
 joyCircle.addEventListener("pointermove", (e) => {
-  if (e.pressure === 0) return;
+  if (!joyCircle.hasPointerCapture(e.pointerId)) return;
 
   let rect = joyCircle.getBoundingClientRect();
   let x = e.clientX - rect.left;
@@ -168,13 +170,23 @@ joyCircle.addEventListener("pointermove", (e) => {
     dy = dy * (maxDist / dist);
   }
 
-  // flyt stick relativt til center
   stick.style.left = (radius + dx) + "px";
   stick.style.top  = (radius + dy) + "px";
   stick.style.transform = "translate(-50%, -50%)";
 
   sendJoystick(Math.round(dx), Math.round(dy));
 });
+
+joyCircle.addEventListener("pointerup", (e) => {
+  joyCircle.releasePointerCapture(e.pointerId);  // ⭐ Slip pointeren
+  resetJoystick();
+});
+
+joyCircle.addEventListener("pointercancel", (e) => {
+  joyCircle.releasePointerCapture(e.pointerId);
+  resetJoystick();
+});
+
 
 /* global pointerup = virker også hvis man slipper uden for cirklen */
 document.addEventListener("pointerup", resetJoystick);
