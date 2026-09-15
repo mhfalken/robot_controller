@@ -124,7 +124,6 @@ document.getElementById("connectBtn").onclick = async () => {
   }
 };
 
-/* Send button command */
 function sendButton(cmd) {
   if (!characteristic) return;
   let data = new TextEncoder().encode("B:" + cmd);
@@ -142,13 +141,12 @@ function sendJoystick(x, y) {
 }
 
 function resetJoystick() {
-  let rect = joyCircle.getBoundingClientRect();
-  let radius = rect.width / 2;
-
-  stick.style.left = (radius - stick.offsetWidth/2) + "px";
-  stick.style.top  = (radius - stick.offsetHeight/2) + "px";
-
-  sendJoystick(0, 0);   // <- sender 0,0 ved slip
+  // grafisk tilbage til midten
+  stick.style.left = "50%";
+  stick.style.top = "50%";
+  stick.style.transform = "translate(-50%, -50%)";
+  // send 0,0
+  sendJoystick(0, 0);
 }
 
 joyCircle.addEventListener("pointermove", (e) => {
@@ -170,18 +168,17 @@ joyCircle.addEventListener("pointermove", (e) => {
     dy = dy * (maxDist / dist);
   }
 
-  stick.style.left = (radius + dx - stick.offsetWidth/2) + "px";
-  stick.style.top  = (radius + dy - stick.offsetHeight/2) + "px";
+  // flyt stick relativt til center
+  stick.style.left = (radius + dx) + "px";
+  stick.style.top  = (radius + dy) + "px";
+  stick.style.transform = "translate(-50%, -50%)";
 
   sendJoystick(Math.round(dx), Math.round(dy));
 });
 
-/* GLOBAL pointerup — virker altid */
+/* global pointerup = virker også hvis man slipper uden for cirklen */
 document.addEventListener("pointerup", resetJoystick);
-
-/* Hvis fingeren glider ud af cirklen */
 joyCircle.addEventListener("pointerleave", resetJoystick);
-
 </script>
 
 </body>
