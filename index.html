@@ -66,20 +66,22 @@ body {
 
 /* Button grid */
 #buttonArea {
-  flex: 1;
+  width: 260px;              /* fast bredde i stedet for flex */
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  grid-gap: 6px;
-  padding: 12px;
+  grid-template-columns: 120px 120px;   /* faste knapbredder */
+  grid-gap: 10px;            /* lille afstand */
+  justify-content: center;   /* centrer grid */
+  align-content: center;
+  padding: 10px;
 }
 
 .btn {
   background: #1e90ff;
-  font-size: 18px;       /* 50% */
-  border-radius: 12px;   /* 50% */
+  font-size: 18px;
+  border-radius: 12px;
   border: none;
-  height: 60px;          /* 50% */
-  width: 120px;          /* 50% af ca. 240px */
+  height: 60px;
+  width: 120px;              /* fast bredde */
 }
 </style>
 </head>
