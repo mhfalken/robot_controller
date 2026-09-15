@@ -34,7 +34,7 @@ body {
   flex-direction: row;
   justify-content: center;
   align-items: center;
-  gap: 20px; /* afstand mellem joystick og knapper */
+  gap: 20px;
   height: calc(100vh - 80px);
 }
 
@@ -54,8 +54,9 @@ body {
   background: #888;
   border-radius: 50%;
   position: absolute;
-  left: 52px; /* center */
-  top: 52px;  /* center */
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
 }
 
 /* Buttons */
@@ -130,28 +131,32 @@ function sendButton(cmd) {
   characteristic.writeValue(data);
 }
 
-/* Joystick logic — CORRECT version */
+/* Joystick logic */
 let joyCircle = document.getElementById("joyCircle");
 let stick = document.getElementById("stick");
 
+function sendJoystick(x, y) {
+  if (!characteristic) return;
+  let data = new TextEncoder().encode("J:" + x + "," + y);
+  characteristic.writeValue(data);
+}
+
 function resetJoystick() {
-  let rect = joyCircle.getBoundingClientRect();
-  let radius = rect.width / 2;
-
-  stick.style.left = (radius - stick.offsetWidth/2) + "px";
-  stick.style.top  = (radius - stick.offsetHeight/2) + "px";
-
-  sendJoystick(0, 0);   // <- sender 0,0 hver gang man slipper
+  stick.style.left = "50%";
+  stick.style.top = "50%";
+  stick.style.transform = "translate(-50%, -50%)";
+  sendJoystick(0, 0);
 }
 
 joyCircle.addEventListener("pointermove", (e) => {
   if (e.pressure === 0) return;
 
   let rect = joyCircle.getBoundingClientRect();
+  let radius = rect.width / 2;
+
   let x = e.clientX - rect.left;
   let y = e.clientY - rect.top;
 
-  let radius = rect.width / 2;
   let dx = x - radius;
   let dy = y - radius;
 
@@ -163,18 +168,15 @@ joyCircle.addEventListener("pointermove", (e) => {
     dy = dy * (maxDist / dist);
   }
 
-  stick.style.left = (radius + dx - stick.offsetWidth/2) + "px";
-  stick.style.top  = (radius + dy - stick.offsetHeight/2) + "px";
+  stick.style.left = (radius + dx) + "px";
+  stick.style.top  = (radius + dy) + "px";
+  stick.style.transform = "translate(-50%, -50%)";
 
   sendJoystick(Math.round(dx), Math.round(dy));
 });
 
-/* Når man slipper fingeren */
 joyCircle.addEventListener("pointerup", resetJoystick);
-
-/* Når fingeren glider ud af joystick-cirklen */
 joyCircle.addEventListener("pointerleave", resetJoystick);
-
 </script>
 
 </body>
