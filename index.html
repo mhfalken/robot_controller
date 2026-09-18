@@ -1,381 +1,177 @@
 <!DOCTYPE html>
-<html lang="da">
+<html>
 <head>
-<meta charset="UTF-8">
-<meta name="viewport"
-      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Robot Controller</title>
-
 <style>
-    * {
-        box-sizing: border-box;
-        user-select: none;
-        -webkit-user-select: none;
-    }
+body {
+  font-family: Arial;
+  background: #222;
+  color: white;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
 
-    html, body {
-        margin: 0;
-        width: 100%;
-        height: 100%;
-        overflow: hidden;
-        font-family: sans-serif;
-        background: #111;
-        color: white;
-        touch-action: none;
-    }
+/* Top bar */
+#topBar {
+  text-align: center;
+  padding: 10px;
+}
 
-    #app {
-        width: 100%;
-        height: 100%;
-        display: flex;
-        flex-direction: column;
-    }
+#connectBtn {
+  background: #4CAF50;
+  width: 160px;
+  height: 50px;
+  font-size: 20px;
+  border-radius: 10px;
+  border: none;
+}
 
-    #status {
-        height: 40px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: #222;
-        font-size: 14px;
-    }
+/* Main layout */
+#container {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  gap: 20px;
+  height: calc(100vh - 80px);
+}
 
-    #controller {
-        flex: 1;
-        display: flex;
-        align-items: center;
-        justify-content: space-around;
-        padding: 20px;
-    }
+/* Joystick */
+#joyCircle {
+  width: 150px;
+  height: 150px;
+  background: #444;
+  border-radius: 50%;
+  position: relative;
+  touch-action: none;
+}
 
-    /* JOYSTICK */
+#stick {
+  width: 45px;
+  height: 45px;
+  background: #888;
+  border-radius: 50%;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
 
-    #joystick {
-        width: min(45vw, 300px);
-        height: min(45vw, 300px);
-        max-width: 300px;
-        max-height: 300px;
-        border-radius: 50%;
-        background: #292929;
-        border: 3px solid #555;
-        position: relative;
-        touch-action: none;
-    }
+/* Buttons */
+#buttonArea {
+  width: 200px;
+  display: grid;
+  grid-template-columns: 90px 90px;
+  grid-gap: 10px;
+  justify-content: center;
+  align-content: center;
+}
 
-    #stick {
-        width: 35%;
-        height: 35%;
-        position: absolute;
-        left: 32.5%;
-        top: 32.5%;
-        border-radius: 50%;
-        background: #777;
-        border: 3px solid #aaa;
-        box-shadow: 0 4px 10px rgba(0,0,0,.5);
-    }
-
-    /* BUTTONS */
-
-    #buttons {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 20px;
-    }
-
-    button {
-        width: 100px;
-        height: 100px;
-        border-radius: 50%;
-        border: 3px solid #666;
-        background: #333;
-        color: white;
-        font-size: 20px;
-        touch-action: none;
-    }
-
-    button.pressed {
-        background: #777;
-        transform: scale(.94);
-    }
-
-    @media (orientation: portrait) {
-        #controller {
-            flex-direction: column;
-        }
-
-        #joystick {
-            width: min(60vw, 280px);
-            height: min(60vw, 280px);
-        }
-    }
+.btn {
+  background: #1e90ff;
+  font-size: 18px;
+  border-radius: 10px;
+  border: none;
+  height: 45px;
+  width: 90px;
+}
 </style>
 </head>
 
 <body>
 
-<div id="app">
+<div id="topBar">
+  <button id="connectBtn">Connect</button>
+</div>
 
-    <div id="status">Forbinder...</div>
+<div id="container">
 
-    <div id="controller">
+  <!-- Joystick -->
+  <div id="joyCircle">
+    <div id="stick"></div>
+  </div>
 
-        <div id="joystick">
-            <div id="stick"></div>
-        </div>
-
-        <div id="buttons">
-            <button data-button="b1">1</button>
-            <button data-button="b2">2</button>
-            <button data-button="b3">3</button>
-            <button data-button="b4">4</button>
-        </div>
-
-    </div>
+  <!-- Buttons -->
+  <div id="buttonArea">
+    <button class="btn" onclick="sendButton('A')">A</button>
+    <button class="btn" onclick="sendButton('B')">B</button>
+    <button class="btn" onclick="sendButton('C')">C</button>
+    <button class="btn" onclick="sendButton('D')">D</button>
+  </div>
 
 </div>
 
 <script>
+let device, server, service, characteristic;
 
-const ESP32_IP = "192.168.4.1";
-const WEBSOCKET_PORT = 81;
+/* BLE connect */
+document.getElementById("connectBtn").onclick = async () => {
+  try {
+    device = await navigator.bluetooth.requestDevice({
+      filters: [{ namePrefix: "ESP32" }],
+      optionalServices: ["00001234-0000-1000-8000-00805f9b34fb"]
+    });
 
-let socket;
+    server = await device.gatt.connect();
+    service = await server.getPrimaryService("00001234-0000-1000-8000-00805f9b34fb");
+    characteristic = await service.getCharacteristic("0000abcd-0000-1000-8000-00805f9b34fb");
 
-let joystickX = 0;
-let joystickY = 0;
-
-let buttons = {
-    b1: 0,
-    b2: 0,
-    b3: 0,
-    b4: 0
+    alert("Connected!");
+  } catch (e) {
+    alert("Connection failed: " + e);
+  }
 };
 
-const statusElement = document.getElementById("status");
-
-
-// --------------------------------------------------
-// WEBSOCKET
-// --------------------------------------------------
-
-function connect() {
-
-    statusElement.textContent = "Forbinder...";
-
-    socket = new WebSocket(
-        `ws://${ESP32_IP}:${WEBSOCKET_PORT}`
-    );
-
-    socket.onopen = () => {
-        statusElement.textContent = "Forbundet";
-    };
-
-    socket.onclose = () => {
-        statusElement.textContent = "Forbindelse afbrudt";
-
-        setTimeout(connect, 1000);
-    };
-
-    socket.onerror = () => {
-        statusElement.textContent = "Forbindelsesfejl";
-    };
+function sendButton(cmd) {
+  if (!characteristic) return;
+  let data = new TextEncoder().encode("B:" + cmd);
+  characteristic.writeValue(data);
 }
 
-connect();
+/* Joystick logic – kun bevægelse, ingen 0,0 ved slip */
+let joyCircle = document.getElementById("joyCircle");
+let stick = document.getElementById("stick");
 
-
-// --------------------------------------------------
-// SEND COMMAND
-// --------------------------------------------------
-
-function sendCommand() {
-
-    if (!socket || socket.readyState !== WebSocket.OPEN)
-        return;
-
-    const command = {
-        x: joystickX,
-        y: joystickY,
-
-        b1: buttons.b1,
-        b2: buttons.b2,
-        b3: buttons.b3,
-        b4: buttons.b4
-    };
-
-    socket.send(JSON.stringify(command));
+function sendJoystick(x, y) {
+  if (!characteristic) return;
+  let data = new TextEncoder().encode("J:" + x + "," + y);
+  characteristic.writeValue(data);
 }
 
+joyCircle.addEventListener("pointermove", (e) => {
+  if (e.pressure === 0) return;
 
-// Send ca. 30 gange/sekund
+  let rect = joyCircle.getBoundingClientRect();
+  let x = e.clientX - rect.left;
+  let y = e.clientY - rect.top;
 
-setInterval(sendCommand, 33);
+  let radius = rect.width / 2;
+  let dx = x - radius;
+  let dy = y - radius;
 
+  let dist = Math.sqrt(dx*dx + dy*dy);
+  let maxDist = radius - stick.offsetWidth / 2;
 
-// --------------------------------------------------
-// JOYSTICK
-// --------------------------------------------------
+  if (dist > maxDist) {
+    dx = dx * (maxDist / dist);
+    dy = dy * (maxDist / dist);
+  }
 
-const joystick = document.getElementById("joystick");
-const stick = document.getElementById("stick");
+  stick.style.left = (radius + dx) + "px";
+  stick.style.top  = (radius + dy) + "px";
+  stick.style.transform = "translate(-50%, -50%)";
 
-let joystickActive = false;
-
-function updateJoystick(clientX, clientY) {
-
-    const rect = joystick.getBoundingClientRect();
-
-    const centerX = rect.left + rect.width / 2;
-    const centerY = rect.top + rect.height / 2;
-
-    let dx = clientX - centerX;
-    let dy = clientY - centerY;
-
-    const radius = rect.width / 2;
-    const maxDistance = radius * 0.65;
-
-    const distance = Math.sqrt(dx * dx + dy * dy);
-
-    if (distance > maxDistance) {
-
-        dx = dx / distance * maxDistance;
-        dy = dy / distance * maxDistance;
-
-    }
-
-    joystickX = Math.round((dx / maxDistance) * 100);
-
-    // Y vendes, så op på skærmen bliver positiv
-
-    joystickY = Math.round((-dy / maxDistance) * 100);
-
-    const stickX =
-        50 + (joystickX / 100) * 32.5;
-
-    const stickY =
-        50 - (joystickY / 100) * 32.5;
-
-    stick.style.left = `${stickX - 17.5}%`;
-    stick.style.top  = `${stickY - 17.5}%`;
-}
-
-
-function resetJoystick() {
-
-    joystickX = 0;
-    joystickY = 0;
-
-    stick.style.left = "32.5%";
-    stick.style.top = "32.5%";
-}
-
-
-joystick.addEventListener("pointerdown", event => {
-
-    joystickActive = true;
-
-    joystick.setPointerCapture(event.pointerId);
-
-    updateJoystick(event.clientX, event.clientY);
+  sendJoystick(Math.round(dx), Math.round(dy));
 });
 
-
-joystick.addEventListener("pointermove", event => {
-
-    if (!joystickActive)
-        return;
-
-    updateJoystick(event.clientX, event.clientY);
+joyCircle.addEventListener("pointerup", () => {
+  // kun grafisk tilbage til midten, ingen 0,0 sendes
+  stick.style.left = "50%";
+  stick.style.top = "50%";
+  stick.style.transform = "translate(-50%, -50%)";
 });
-
-
-joystick.addEventListener("pointerup", event => {
-
-    joystickActive = false;
-
-    resetJoystick();
-});
-
-
-joystick.addEventListener("pointercancel", event => {
-
-    joystickActive = false;
-
-    resetJoystick();
-});
-
-
-// --------------------------------------------------
-// BUTTONS
-// --------------------------------------------------
-
-document.querySelectorAll("button").forEach(button => {
-
-    const name = button.dataset.button;
-
-    button.addEventListener("pointerdown", event => {
-
-        event.preventDefault();
-
-        buttons[name] = 1;
-
-        button.classList.add("pressed");
-    });
-
-
-    button.addEventListener("pointerup", event => {
-
-        event.preventDefault();
-
-        buttons[name] = 0;
-
-        button.classList.remove("pressed");
-    });
-
-
-    button.addEventListener("pointercancel", event => {
-
-        buttons[name] = 0;
-
-        button.classList.remove("pressed");
-    });
-
-
-    button.addEventListener("pointerleave", event => {
-
-        // Hvis fingeren forlader knappen
-
-        if (event.buttons === 0) {
-
-            buttons[name] = 0;
-
-            button.classList.remove("pressed");
-        }
-    });
-
-});
-
-
-// --------------------------------------------------
-// STOP ALLE KONTROLLER VED TAB / LUKNING
-// --------------------------------------------------
-
-function emergencyReset() {
-
-    joystickX = 0;
-    joystickY = 0;
-
-    buttons.b1 = 0;
-    buttons.b2 = 0;
-    buttons.b3 = 0;
-    buttons.b4 = 0;
-
-    resetJoystick();
-}
-
-window.addEventListener("blur", emergencyReset);
-
 </script>
 
 </body>
